@@ -1,0 +1,6 @@
+user=mail
+password=qwerty
+hosts=mysql
+dbname=mail
+user=mail
+query = SELECT maildir FROM mailbox WHERE username='%s' AND active = '1'

@@ -1,0 +1,105 @@
+version: '3.7'
+services:
+        dovecot:
+                depends_on:
+                        - mysql
+                        - certdumper
+                container_name: dovecot
+                build: ./dovecot
+                env_file: .env
+                hostname: $MAILSERVER_FQDN
+                ports:
+                        - "143:143"
+                        - "993:993"
+                        - "4190:4190"
+                volumes:
+                        - ./dovecot/etc:/etc/dovecot
+                        - ./letsencrypt:/ssl:ro
+                        - ./dovecot/mail:/srv/vmail
+                        - ./dovecot/log:/var/log
+        postfix:
+                depends_on:
+                        - dovecot
+                        - mysql
+                        - rspamd
+                        - certdumper
+                container_name: postfix
+                build: ./postfix
+                env_file: .env
+                hostname: MAILSERVER_FQDN
+                ports:
+                        - "25:25"
+                        - "587:587"
+                volumes:
+                        - ./postfix/etc:/etc/postfix
+                        - ./letsencrypt:/ssl:ro
+                        - ./postfix/logs:/var/log
+        postfixadmin:
+                depends_on:
+                        - mysql
+                image: postfixadmin
+                labels:
+                        - traefik.enable=true
+                        - traefik.postfixadmin-mail.protocol=https
+                        - traefik.http.routers.postfixadmin-mail.tls.certResolver=letsencrypt
+                        - traefik.http.routers.postfixadmin-mail.rule=Host(`${MAILSERVER_FQDN}`) && PathPrefix(`/postfixadmin/`)
+                        - traefik.http.middlewares.postfix_prefix.replacepathregex.regex=^/postfixadmin(.*)
+                        - traefik.http.middlewares.postfix_prefix.replacepathregex.replacement=$$1
+                        - traefik.http.routers.postfixadmin-mail.middlewares=postfix_prefix@docker
+                restart: always
+                volumes:
+                        - ./postfixadmin/www:/var/www/html
+                env_file: .env
+                environment:
+                        POSTFIXADMIN_DB_TYPE: mysqli
+                        POSTFIXADMIN_DB_HOST: mysql
+                        POSTFIXADMIN_DB_USER: ${MYSQL_USER}
+                        POSTFIXADMIN_DB_NAME: ${MYSQL_DATABASE}
+                        POSTFIXADMIN_DB_PASSWORD: ${MYSQL_PASSWORD}
+        mysql:
+                image: mariadb
+                env_file: .env
+                volumes:
+                        - ./mysql/data:/var/lib/mysql
+        redis:
+                image: redis:latest
+                volumes:
+                        - ./redis/data:/data
+        rspamd:
+                depends_on:
+                        - redis
+                        - traefik
+                build: ./rspamd
+                volumes:
+                        - ./rspamd/local.d:/etc/rspamd/local.d
+                        - ./rspamd/logs:/var/log/rspamd
+                labels:
+                        - traefik.enable=true
+                        - traefik.rspamd-mail.protocol=https
+                        - traefik.http.services.rspamd-mail.loadbalancer.server.port=11334
+                        - traefik.http.routers.rspamd-mail.tls.certResolver=letsencrypt
+                        - traefik.http.routers.rspamd-mail.rule=Host(`${MAILSERVER_FQDN}`) && PathPrefix(`/rspamd/`)
+                        - traefik.http.middlewares.rspamd_prefix.replacepathregex.regex=^/rspamd(.*)
+                        - traefik.http.middlewares.rspamd_prefix.replacepathregex.replacement=$$1
+                        - traefik.http.routers.rspamd-mail.middlewares=rspamd_prefix@docker
+        traefik:
+                image: traefik:latest
+                ports:
+                        - 80:80
+                        - 443:443
+                        - 8080:8080
+                volumes:
+                        - ./traefik/etc/traefik.yml:/etc/traefik/traefik.yml
+                        - /run/docker.sock:/var/run/docker.sock
+                        - ./traefik/acme:/acme
+        certdumper:
+                depends_on:
+                        - traefik
+                image: humenius/traefik-certs-dumper:latest
+                command: --restart-containers postfix,dovecot
+                volumes:
+                        - ./traefik/acme:/traefik:ro
+                        - ./letsencrypt:/output:rw
+                        - /run/docker.sock:/var/run/docker.sock:ro
+                environment:
+                        - DOMAIN=${MAILSERVER_FQDN}

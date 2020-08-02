@@ -1,0 +1,24 @@
+## traefik.yml
+
+entryPoints:
+  http:
+    address: ":80"
+
+  https:
+    address: ":443"
+
+# Docker configuration backend
+providers:
+  docker:
+          exposedbydefault: false
+
+# API and dashboard configuration
+api:
+  insecure: true
+
+certificatesResolvers:
+        letsencrypt:
+                acme:
+                        storage: "/acme/acme.json"
+                        caServer: "https://acme-staging-v02.api.letsencrypt.org/directory"
+                        tlsChallenge: []

@@ -1,0 +1,5 @@
+user=mail
+password=qwerty
+hosts=mysql
+dbname=mail
+query = SELECT transport FROM domain WHERE domain='%s' AND active = '1'

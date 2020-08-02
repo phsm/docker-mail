@@ -1,0 +1,5 @@
+user=mail
+password=qwerty
+hosts=mysql
+dbname=mail
+query = SELECT username FROM mailbox WHERE username='%s' AND active = '1'

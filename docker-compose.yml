@@ -13,7 +13,6 @@ services:
                         - "993:993"
                         - "4190:4190"
                 volumes:
-                        - ./dovecot/etc:/etc/dovecot
                         - ./letsencrypt:/ssl:ro
                         - ./dovecot/mail:/srv/vmail
                         - ./dovecot/logs:/var/log

@@ -1,5 +1,5 @@
-user=mail
-password=qwerty
-hosts=mysql
-dbname=mail
+hosts=
+user=
+password=
+dbname=
 query = SELECT transport FROM domain WHERE domain='%s' AND active = '1'

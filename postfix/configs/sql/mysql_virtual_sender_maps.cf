@@ -1,5 +1,5 @@
-user=mail
-password=qwerty
-hosts=mysql
-dbname=mail
+hosts=
+user=
+password=
+dbname=
 query = SELECT username FROM mailbox WHERE username='%s' AND active = '1'

@@ -91,7 +91,6 @@ smtp_tls_security_level = may
 smtp_tls_protocols = !SSLv2,!SSLv3
 smtpd_tls_protocols = !SSLv2,!SSLv3
 smtp_tls_loglevel = 1
-smtpd_tls_auth_only = yes
 smtpd_tls_chain_files = /ssl/key.pem, /ssl/cert.pem
 smtp_tls_chain_files = /ssl/key.pem, /ssl/cert.pem
 smtpd_tls_CApath = /etc/ssl/certs

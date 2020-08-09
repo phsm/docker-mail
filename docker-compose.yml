@@ -54,6 +54,25 @@ services:
                         POSTFIXADMIN_DB_USER: ${MYSQL_USER}
                         POSTFIXADMIN_DB_NAME: ${MYSQL_DATABASE}
                         POSTFIXADMIN_DB_PASSWORD: ${MYSQL_PASSWORD}
+        roundcube:
+                depends_on:
+                        - dovecot
+                        - postfix
+                        - mysql
+                image: roundcube/roundcubemail
+                env_file: .env
+                environment:
+                        ROUNDCUBEMAIL_DEFAULT_HOST: dovecot
+                        ROUNDCUBEMAIL_SMTP_SERVER: postfix
+                        ROUNDCUBEMAIL_UPLOAD_MAX_FILESIZE: 50M
+                labels:
+                        - traefik.enable=true
+                        - traefik.roundcube-mail.protocol=https
+                        - traefik.http.routers.roundcube-mail.tls.certResolver=letsencrypt
+                        - traefik.http.routers.roundcube-mail.rule=Host(`${MAILSERVER_FQDN}`) && PathPrefix(`/webmail/`)
+                        - traefik.http.middlewares.roundcube_prefix.replacepathregex.regex=^/webmail(.*)
+                        - traefik.http.middlewares.roundcube_prefix.replacepathregex.replacement=$$1
+                        - traefik.http.routers.roundcube-mail.middlewares=roundcube_prefix@docker
         mysql:
                 image: mariadb
                 env_file: .env
